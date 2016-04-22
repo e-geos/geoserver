@@ -1,12 +1,16 @@
 ﻿<?xml version="1.0" encoding="UTF-8"?>
 <!-- 
- Copyright (C) 2014 - Open Source Geospatial Foundation. All rights reserved.
+ Copyright (C) 2014 - 2016 Open Source Geospatial Foundation. All rights reserved.
  This code is licensed under the GPL 2.0 license, available at the root
  application directory.
  -->
 <!DOCTYPE beans PUBLIC "-//SPRING//DTD BEAN//EN" "http://www.springframework.org/dtd/spring-beans.dtd">
 
 <beans>
+    <bean class="org.geoserver.platform.ModuleStatusImpl">
+      <constructor-arg index="0" value="gs-wms"/>
+      <constructor-arg index="1" value="GeoServer Web Map Service"/>
+    </bean>
 	<bean id="wmsLegacyLoader" class="org.geoserver.wms.WMSLoader"/>
     <bean id="wmsLoader" class="org.geoserver.wms.WMSXStreamLoader">
       <constructor-arg ref="resourceLoader"/>
@@ -586,13 +590,13 @@
     
 
 	<bean id="AtomGeoRSSMapProducer"
-		singleton="true"
+		scope="prototype"
 		class="org.geoserver.wms.georss.AtomGeoRSSMapOutputFormat">
         <constructor-arg index="0" ref="wms"/>
 	</bean>
 
 	<bean id="RSSGeoRSSMapProducer"
-		singleton="true"
+		scope="prototype"
 		class="org.geoserver.wms.georss.RSSGeoRSSMapOutputFormat">
         <constructor-arg index="0" ref="wms"/>
 	</bean>
@@ -640,28 +644,28 @@
     <!-- Default Decoration Plugins -->
     <bean id="image" 
           class="org.geoserver.wms.decoration.WatermarkDecoration"
-          singleton="false"
+          scope="prototype"
      />
 
     <bean id="legend" 
           class="org.geoserver.wms.decoration.LegendDecoration"
-          singleton="false">
+          scope="prototype">
        <constructor-arg ref="wms"/>
     </bean>
 
     <bean id="scaleratio" 
           class="org.geoserver.wms.decoration.ScaleRatioDecoration"
-          singleton="false"
+          scope="prototype"
     />
     
     <bean id="scaleline" 
           class="org.geoserver.wms.decoration.ScaleLineDecoration"
-          singleton="false"
+          scope="prototype"
     />
     
     <bean id="text" 
           class="org.geoserver.wms.decoration.TextDecoration"
-          singleton="false"
+          scope="prototype"
     />
     
     <bean id="wmsWorkspaceQualifier" class="org.geoserver.wms.WMSWorkspaceQualifier">
@@ -765,6 +769,10 @@
   <bean id="legendSample" class="org.geoserver.wms.capabilities.LegendSampleImpl" lazy-init="false">
     <constructor-arg ref="catalog"/>
     <constructor-arg ref="resourceLoader"/>
+  </bean>
+  
+  <bean id="UTFGridMapProducer" class="org.geoserver.wms.utfgrid.UTFGridMapOutputFormat">
+    <constructor-arg ref="wms"/>
   </bean>
   
 </beans>

@@ -1,4 +1,4 @@
-/* (c) 2014 - 2015 Open Source Geospatial Foundation - all rights reserved
+/* (c) 2014 - 2016 Open Source Geospatial Foundation - all rights reserved
  * (c) 2001 - 2014 OpenPlans
  * This code is licensed under the GPL 2.0 license, available at the root
  * application directory.
@@ -120,6 +120,7 @@ public class GetMap {
             map = fireFinished(map);
             return map;
         } catch (Throwable t) {
+            mapContent.dispose();
             fireFailed(t);
             if(t instanceof RuntimeException) {
                 throw (RuntimeException) t;
@@ -257,7 +258,7 @@ public class GetMap {
      * @param mapContent
      * @param delegate
      * @param env
-     * @return
+     *
      * @throws IOException
      */
     WebMap executeInternal(WMSMapContent mapContent, final GetMapRequest request,
@@ -569,7 +570,7 @@ public class GetMap {
      * 
      * @param style
      * @param scaleDenominator
-     * @return
+     *
      */
     static int computeLayerBuffer(Style style, double scaleDenominator) {
         final double TOLERANCE = 1e-6;

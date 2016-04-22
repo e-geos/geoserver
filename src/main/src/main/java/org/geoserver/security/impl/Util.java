@@ -20,6 +20,7 @@ import java.util.Properties;
 import java.util.SortedSet;
 import java.util.logging.Logger;
 
+import org.geoserver.platform.resource.Resource;
 import org.geoserver.security.GeoServerRoleService;
 import org.geoserver.security.GeoServerRoleStore;
 import org.geoserver.security.GeoServerUserGroupService;
@@ -45,7 +46,7 @@ public class Util {
      * 
      * @param booleanString
      * @param defaultValue
-     * @return
+     *
      */
     static public boolean convertToBoolean(String booleanString, boolean defaultValue) {        
         if (booleanString == null || booleanString.trim().length()==0)
@@ -168,7 +169,7 @@ public class Util {
      * format.
      * 
      * @param in
-     * @return
+     *
      * @throws IOException
      */
     public static Properties loadUniversal(InputStream in) throws IOException {
@@ -204,6 +205,18 @@ public class Util {
         }
         finally {
             fin.close();
+        }
+    }
+    
+    /**
+     * Reads a property file resource.
+     * <p>
+     * This method delegates to {@link #loadUniversal(InputStream)}.
+     * </p>
+     */
+    public static Properties loadPropertyFile(Resource f) throws IOException {
+        try (InputStream in = f.in()) {
+            return loadUniversal(in);
         }
     }
     

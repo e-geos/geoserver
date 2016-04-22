@@ -12,6 +12,7 @@ import java.util.List;
 
 import org.geoserver.importer.FileData;
 import org.geoserver.importer.ImportData;
+import org.geoserver.platform.resource.Resource;
 
 /**
  * Runs gdal_translate on a input raster file
@@ -24,7 +25,7 @@ public class GdalTranslateTransform extends AbstractCommandLineTransform impleme
     /**
      * Checks if gdal_translate is available
      * 
-     * @return
+     *
      * @throws IOException
      */
     public static boolean isAvailable() throws IOException {
@@ -37,12 +38,12 @@ public class GdalTranslateTransform extends AbstractCommandLineTransform impleme
 
     @Override
     protected List<String> getReplacementTargetNames(ImportData data) throws IOException {
-        File input = getInputFile(data);
-        return Collections.singletonList(input.getName());
+        Resource input = getInputFile(data);
+        return Collections.singletonList(input.name());
     }
 
     @Override
-    protected File getInputFile(ImportData data) throws IOException {
+    protected Resource getInputFile(ImportData data) throws IOException {
         if (data instanceof FileData) {
             FileData fd = (FileData) data;
             return fd.getFile();

@@ -9,9 +9,8 @@ import it.geosolutions.imageio.plugins.png.PNGWriter;
 
 import java.awt.Dimension;
 import java.awt.image.BufferedImage;
-import java.io.File;
-import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.OutputStream;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Set;
@@ -31,6 +30,7 @@ import org.geoserver.config.impl.GeoServerLifecycleHandler;
 import org.geoserver.platform.GeoServerResourceLoader;
 import org.geoserver.platform.resource.Paths;
 import org.geoserver.platform.resource.Resource;
+import org.geoserver.platform.resource.Resource.Type;
 import org.geoserver.wms.GetLegendGraphicOutputFormat;
 import org.geoserver.wms.GetLegendGraphicRequest;
 import org.geoserver.wms.legendgraphic.BufferedImageLegendGraphic;
@@ -65,13 +65,13 @@ public class LegendSampleImpl implements CatalogListener, LegendSample,
     
     private Set<String> invalidated = new HashSet<String>();
     
-    File baseDir;
+    Resource baseDir;
     
     public LegendSampleImpl(Catalog catalog, GeoServerResourceLoader loader) {
         super();
         this.catalog = catalog;
         this.loader = loader;
-        this.baseDir = loader.getBaseDirectory();
+        this.baseDir = loader.get(Paths.BASE);
         this.clean();
         this.catalog.addListener(this);
     }
@@ -83,7 +83,7 @@ public class LegendSampleImpl implements CatalogListener, LegendSample,
         for (StyleInfo style : catalog.getStyles()) {
             synchronized (style) {
                 Resource styleResource = getStyleResource(style);
-                File sampleFile;
+                Resource sampleFile;
                 try {
                     // remove old samples
                     sampleFile = getSampleFile(style);
@@ -103,13 +103,13 @@ public class LegendSampleImpl implements CatalogListener, LegendSample,
      * 
      * @param styleResource
      * @param sampleFile
-     * @return
+     *
      */
     private boolean isStyleNewerThanSample(Resource styleResource,
-            File sampleFile) {
+            Resource sampleFile) {
         return isSampleExisting(sampleFile)
                 && styleResource.getType() == Resource.Type.RESOURCE
-                && styleResource.lastmodified() > sampleFile.lastModified();
+                && styleResource.lastmodified() > sampleFile.lastmodified();
     }
     
     /**
@@ -117,10 +117,10 @@ public class LegendSampleImpl implements CatalogListener, LegendSample,
      * it exists, null otherwise.
      *  
      * @param style
-     * @return
+     *
      * @throws IOException
      */
-    private File getSampleFile(StyleInfo style) throws IOException {
+    private Resource getSampleFile(StyleInfo style) throws IOException {
         String fileName = getSampleFileName(style);
         return getSampleFile(fileName);
     }
@@ -129,17 +129,17 @@ public class LegendSampleImpl implements CatalogListener, LegendSample,
      * Returns  the cached sample with the given name.
      * 
      * @param fileName
-     * @return
+     *
      */
-    private File getSampleFile(String fileName) {
-        return new File(getSamplesFolder(), fileName);
+    private Resource getSampleFile(String fileName) {
+        return getSamplesFolder().get(fileName);
     }
 
     /**
      * Gets a unique fileName for a sample.
      * 
      * @param style
-     * @return
+     *
      */
     private String getSampleFileName(StyleInfo style) {
         String prefix = "";
@@ -154,7 +154,7 @@ public class LegendSampleImpl implements CatalogListener, LegendSample,
      * Gets an SLD resource for the given style.
      * 
      * @param style
-     * @return
+     *
      */
     private Resource getStyleResource(StyleInfo style) {
         String[] prefix = new String[0];
@@ -179,7 +179,7 @@ public class LegendSampleImpl implements CatalogListener, LegendSample,
         synchronized (style) {
             GetLegendGraphicOutputFormat pngOutputFormat = new PNGLegendOutputFormat();
     
-            File sampleLegend = getSampleFile(style);
+            Resource sampleLegend = getSampleFile(style);
             if (isSampleExisting(sampleLegend)
                     && !isStyleSampleInvalid(style)) {
                 // using existing sample if sld has not been updated from
@@ -193,8 +193,8 @@ public class LegendSampleImpl implements CatalogListener, LegendSample,
         }
     }
 
-    private boolean isSampleExisting(File sampleLegend) {
-        return sampleLegend != null && sampleLegend.exists();
+    private boolean isSampleExisting(Resource sampleLegend) {
+        return sampleLegend != null && sampleLegend.getType() == Type.RESOURCE;
     }
     
     /**
@@ -204,13 +204,12 @@ public class LegendSampleImpl implements CatalogListener, LegendSample,
      * 
      * @param style
      * @param pngOutputFormat
-     * @return
-     * @throws Exception
+     *
      */
     private Dimension createNewSample(StyleInfo style,
             GetLegendGraphicOutputFormat pngOutputFormat) throws Exception {
         GetLegendGraphicRequest legendGraphicRequest = new GetLegendGraphicRequest();
-        File sampleLegendFolder = getSamplesFolder(); 
+        Resource sampleLegendFolder = getSamplesFolder(); 
         
         legendGraphicRequest.setStrict(false);
         legendGraphicRequest.setLayer((FeatureType) null);
@@ -223,14 +222,10 @@ public class LegendSampleImpl implements CatalogListener, LegendSample,
                     .getLegend();
 
             PNGWriter writer = new PNGWriter();
-            FileOutputStream outStream = null;
+            OutputStream outStream = null;
             try {
-                File sampleFile = new File(sampleLegendFolder.getAbsolutePath() + File.separator +
-                        getSampleFileName(style));
-                if(!sampleFile.getParentFile().exists()) {
-                    sampleFile.getParentFile().mkdirs();
-                }
-                outStream = new FileOutputStream(sampleFile);
+                Resource sampleFile = sampleLegendFolder.get(getSampleFileName(style));
+                outStream = sampleFile.out();
                 writer.writePNG(image, outStream, 0.0f, FilterType.FILTER_NONE);
                 removeStyleSampleInvalidation(style);
                 return new Dimension(image.getWidth(), image.getHeight());
@@ -245,21 +240,21 @@ public class LegendSampleImpl implements CatalogListener, LegendSample,
         return null;
     }
 
-    private File getSamplesFolder() {
-        return new File(baseDir + File.separator + LEGEND_SAMPLES_FOLDER);
+    private Resource getSamplesFolder() {
+        return baseDir.get(LEGEND_SAMPLES_FOLDER);
     }
     
     /**
      * 
      * @param sampleLegendFile
-     * @return
+     *
      */
-    private Dimension getSizeFromSample(File sampleLegendFile) {
+    private Dimension getSizeFromSample(Resource sampleLegendFile) {
         PngReader pngReader = null;
         try {
             // reads size using PNGJ reader, that can read metadata without reading
             // the full image
-            pngReader = new PngReader(sampleLegendFile);
+            pngReader = new PngReader(sampleLegendFile.file());
             return new Dimension(pngReader.imgInfo.cols, pngReader.imgInfo.rows);
         } finally {
             if (pngReader != null) {
@@ -319,7 +314,7 @@ public class LegendSampleImpl implements CatalogListener, LegendSample,
      * Checks if the given style sample is marked as invalid.
      * 
      * @param style
-     * @return
+     *
      */
     private boolean isStyleSampleInvalid(StyleInfo style) {
         return invalidated.contains(getStyleName(style));
@@ -330,7 +325,7 @@ public class LegendSampleImpl implements CatalogListener, LegendSample,
      * form worspacename:stylename (or stylename if the style is global).
      * 
      * @param styleInfo
-     * @return
+     *
      */
     private String getStyleName(StyleInfo styleInfo) {
         return styleInfo.getWorkspace() != null ? (styleInfo.getWorkspace()

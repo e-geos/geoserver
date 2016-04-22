@@ -26,7 +26,7 @@
     </dependency>
     <dependency>
       <groupId>javax.servlet</groupId>
-      <artifactId>servlet-api</artifactId>
+      <artifactId>javax.servlet-api</artifactId>
       <scope>provided</scope>
     </dependency>
   </dependencies>
@@ -171,13 +171,6 @@
       <id>charts</id>
       <modules>
         <module>charts</module>
-      </modules>
-    </profile>
-
-    <profile>
-      <id>geosearch</id>
-      <modules>
-        <module>geosearch</module>
       </modules>
     </profile>
 
@@ -327,7 +320,6 @@
       <modules>
         <module>app-schema</module>
         <module>arcsde</module>
-        <module>geosearch</module>
         <module>h2</module>
         <module>sqlserver</module>
         <module>oracle</module>
@@ -368,7 +360,6 @@
       <modules>
         <module>app-schema</module>
         <module>arcsde</module>
-        <module>geosearch</module>
         <module>h2</module>
         <module>sqlserver</module>
         <module>oracle</module>

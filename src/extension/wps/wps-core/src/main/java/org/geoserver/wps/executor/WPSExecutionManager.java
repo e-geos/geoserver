@@ -1,4 +1,4 @@
-/* (c) 2014 Open Source Geospatial Foundation - all rights reserved
+/* (c) 2014 - 2015 Open Source Geospatial Foundation - all rights reserved
  * (c) 2001 - 2013 OpenPlans
  * This code is licensed under the GPL 2.0 license, available at the root
  * application directory.
@@ -136,7 +136,7 @@ public class WPSExecutionManager implements ApplicationContextAware,
      * 
      * @param request
      * @param listener
-     * @return
+     *
      */
     Map<String, Object> submitChained(ExecuteRequest request, ProgressListener listener) {
         Name processName = request.getProcessName();
@@ -235,7 +235,7 @@ public class WPSExecutionManager implements ApplicationContextAware,
     /**
      * Returns the HTTP connection timeout for remote resource fetching
      * 
-     * @return
+     *
      */
     public int getConnectionTimeout() {
         return connectionTimeout;
@@ -375,7 +375,11 @@ public class WPSExecutionManager implements ApplicationContextAware,
                 longSteps++;
             }
             float longStepPercentage = 98f / longSteps;
-            float inputPercentage = 1 + inputsLongSteps * longStepPercentage;
+            // Set the base to 0 in case of no inputs, as there is really nothing to do there,
+            // this will make the process call the listener startup notification instead
+            // otherwise the executor SubProgressListener won't delegate that method down
+            int inputsBase = inputs.size() == 0 ? 0 : 1;
+            float inputPercentage = inputsBase + inputsLongSteps * longStepPercentage;
             float outputPercentage = (hasComplexOutputs() ? longStepPercentage : 0) + 1;
             float executionPercentage = 100 - inputPercentage - outputPercentage;
             ProgressListener listener = notifier.getProgressListener();

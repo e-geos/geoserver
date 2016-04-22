@@ -95,8 +95,6 @@ public class GeoServerUserDao implements UserDetailsService {
         InputStream is = null;
         OutputStream os = null;
         try {
-            //securityDir = GeoserverDataDirectory.findCreateConfigDir("security");
-            //File propFile = new File(securityDir, "users.properties");
             if (propFile.getType() == Type.RESOURCE) {
                 // we're probably dealing with an old data dir, create
                 // the file without
@@ -117,7 +115,6 @@ public class GeoServerUserDao implements UserDetailsService {
     
                 // setup a sample service.properties
                 Resource serviceFile = loader.get("security/service.properties");
-                //File serviceFile = new File(securityDir, "service.properties");
                 os = serviceFile.out();
                 is = GeoServerUserDao.class
                         .getResourceAsStream("serviceTemplate.properties");
@@ -168,7 +165,7 @@ public class GeoServerUserDao implements UserDetailsService {
     /**
      * Returns the list of users. To be used for UI editing of users, it's a live map
      * 
-     * @return
+     *
      */
     public List<User> getUsers() {
         checkUserMap();
@@ -205,7 +202,7 @@ public class GeoServerUserDao implements UserDetailsService {
     /**
      * Removes the specified user from the users list
      * @param username
-     * @return
+     *
      */
     public boolean removeUser(String username) {
         checkUserMap();
@@ -224,7 +221,6 @@ public class GeoServerUserDao implements UserDetailsService {
 
             // write out to the data dir
             Resource propFile = userDefinitionsFile.getResource();
-            //File propFile = new File(securityDir, "users.properties");
             os = propFile.out();
             p.store(os, null);
         } catch (Exception e) {
@@ -282,7 +278,7 @@ public class GeoServerUserDao implements UserDetailsService {
      * Stores the provided user map into a properties object
      * 
      * @param userMap
-     * @return
+     *
      */
     Properties storeUsersToProperties(Map<String, User> userMap) {
         Properties p = new Properties();
@@ -296,7 +292,7 @@ public class GeoServerUserDao implements UserDetailsService {
      * Turns the users password, granted authorities and enabled state into a property file value
      * 
      * @param user
-     * @return
+     *
      */
     String serializeUser(User user) {
         StringBuffer sb = new StringBuffer();

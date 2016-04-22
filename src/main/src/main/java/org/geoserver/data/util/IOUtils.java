@@ -54,10 +54,18 @@ public final class IOUtils {
      * @throws IOException
      */
     public static void copy(InputStream from, File to) throws IOException {
-        OutputStream out = null;
-        try {
-            out = new FileOutputStream(to);
-
+        copy(from, new FileOutputStream(to));
+    }
+    
+    /**
+     * Copies the provided input stream onto an outputstream
+     * 
+     * @param from
+     * @param to
+     * @throws IOException
+     */
+    public static void copy(InputStream from, OutputStream out) throws IOException {
+        try {        
             byte[] buffer = new byte[1024 * 16];
             int bytes = 0;
             while ((bytes = from.read(buffer)) != -1)
@@ -175,7 +183,7 @@ public final class IOUtils {
      * 
      * @param basePath
      * @param prefix
-     * @return
+     *
      * @throws IOException
      */
     public static File createRandomDirectory(String baseDir, String prefix, String suffix)
@@ -191,7 +199,7 @@ public final class IOUtils {
      * Creates a temporary directory whose name will start by prefix
      *
      * Strategy is to leverage the system temp directory, then create a sub-directory.
-     * @return
+     *
      */
     public static File createTempDirectory(String prefix) throws IOException {
         File dummyTemp = File.createTempFile("blah", null);
@@ -376,7 +384,6 @@ public final class IOUtils {
      * @param len 
      * @param stream
      * @param fos
-     * @return 
      * @throws IOException
      */
     public static void saveCompressedStream(final byte[] buffer, final OutputStream out, final int len) throws IOException {
@@ -401,7 +408,6 @@ public final class IOUtils {
      *        was error free.
      * @param obj The object to serialize.
      * @param xp The persister.
-     * @throws Exception
      */
     public static void xStreamPersist(File f, Object obj, XStreamPersister xp)
             throws IOException {
@@ -437,7 +443,6 @@ public final class IOUtils {
      *        was error free.
      * @param obj The object to serialize.
      * @param xp The persister.
-     * @throws Exception
      */
     public static void xStreamPersist(Resource r, Object obj, XStreamPersister xp)
             throws IOException {

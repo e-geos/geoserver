@@ -1,4 +1,4 @@
-/* (c) 2014 Open Source Geospatial Foundation - all rights reserved
+/* (c) 2014 - 2016 Open Source Geospatial Foundation - all rights reserved
  * (c) 2001 - 2014 OpenPlans
  * This code is licensed under the GPL 2.0 license, available at the root
  * application directory.
@@ -19,13 +19,16 @@ import javax.xml.namespace.QName;
 import org.custommonkey.xmlunit.XMLAssert;
 import org.geoserver.catalog.Catalog;
 import org.geoserver.catalog.CatalogBuilder;
+import org.geoserver.catalog.CatalogFactory;
 import org.geoserver.catalog.CoverageInfo;
 import org.geoserver.catalog.FeatureTypeInfo;
+import org.geoserver.catalog.LayerGroupInfo;
 import org.geoserver.catalog.LayerInfo;
 import org.geoserver.catalog.ProjectionPolicy;
 import org.geoserver.catalog.StyleInfo;
 import org.geoserver.catalog.WMSLayerInfo;
 import org.geoserver.catalog.WMSStoreInfo;
+import org.geoserver.catalog.WorkspaceInfo;
 import org.geoserver.data.test.MockData;
 import org.geoserver.data.test.SystemTestData;
 import org.geoserver.data.test.SystemTestData.LayerProperty;
@@ -48,7 +51,7 @@ import org.opengis.filter.Filter;
 import org.opengis.filter.FilterFactory;
 import org.w3c.dom.Document;
 
-import com.mockrunner.mock.web.MockHttpServletResponse;
+import org.springframework.mock.web.MockHttpServletResponse;
 
 public class GetFeatureInfoTest extends WMSTestSupport {
     
@@ -99,6 +102,7 @@ public class GetFeatureInfoTest extends WMSTestSupport {
         testData.addStyle("squares","squares.sld",GetFeatureInfoTest.class,catalog);
         testData.addStyle("point_test","point_test.sld",GetFeatureInfoTest.class,catalog);
         testData.addStyle("scaleBased","scaleBased.sld",GetFeatureInfoTest.class,catalog);
+        testData.addStyle("stacker","stacker.sld",GetFeatureInfoTest.class,catalog);
         testData.addVectorLayer(SQUARES,Collections.EMPTY_MAP,"squares.properties",
                 GetFeatureInfoTest.class,catalog);
         Map propertyMap = new HashMap<SystemTestData.LayerProperty, Object>();
@@ -144,10 +148,10 @@ public class GetFeatureInfoTest extends WMSTestSupport {
                 .getFeatureTypeByName(MockData.CITE_URI, "point_test_3d");
 
         ReferencedEnvelope b = info.getLatLonBoundingBox();
-        String bbox = b.minX() + "," + b.minY() + "," + b.maxX() + "," + b.maxY()
+        String bbox = b.getMinX() + "," + b.getMinY() + "," + b.getMaxX() + "," + b.getMaxY()
                 + "&srs=EPSG:4326";
 
-        // first request against 2D dataset
+        // first request against 2D dataset with the stacker transformation
         String layer2d = getLayerId(POINT_TEST_2D);
         String base2d = "wms?version=1.1.1&format=png&info_format=text/html&request=GetFeatureInfo&layers="
                 + layer2d
@@ -176,6 +180,22 @@ public class GetFeatureInfoTest extends WMSTestSupport {
         XMLAssert.assertXpathEvaluatesTo("11", "count(/html/body/table/tr)", dom3d);
 
     }
+    
+    @Test
+    public void testPointStacker() throws Exception {
+        String layerName = getLayerId(MockData.BRIDGES);
+
+        // first request against 2D dataset
+        String base2d = "wms?version=1.1.1&format=png&info_format=text/html&request=GetFeatureInfo&layers="
+                + layerName + "&query_layers=" + layerName + "&styles=stacker&bbox=-1,-1,1,1&srs=EPSG:4326&feature_count=10";
+
+        Document dom2d = getAsDOM(
+                base2d + "&width=" + 100 + "&height=" + 100 + "&x=" + 50 + "&y=" + 50);
+        print(dom2d);
+        // used to throw an exception and fail
+        XMLAssert.assertXpathEvaluatesTo("2", "count(/html/body/table/tr)", dom2d);
+    }
+
 
 
 	/**
@@ -200,7 +220,6 @@ public class GetFeatureInfoTest extends WMSTestSupport {
      * GML feature bounding enabled. This method tests GML 2 with Content-Type:
      * <code>application/vnd.ogc.gml</code>.
      *
-     * @throws Exception
      */
     @Test
     public void testGMLNoData() throws Exception {
@@ -212,7 +231,6 @@ public class GetFeatureInfoTest extends WMSTestSupport {
      * GML feature bounding enabled. This method tests GML 2 with Content-Type:
      * <code>text/xml</code>.
      *
-     * @throws Exception
      */
     @Test
     public void testXMLNoData() throws Exception {
@@ -224,7 +242,6 @@ public class GetFeatureInfoTest extends WMSTestSupport {
      * GML feature bounding enabled. This method tests GML 3.1.1 with Content-Type:
      * <code>text/xml; subtype=gml/3.1.1</code>.
      *
-     * @throws Exception
      */
     @Test
     public void testXML311NoData() throws Exception {
@@ -235,7 +252,6 @@ public class GetFeatureInfoTest extends WMSTestSupport {
      * Tests GML outside of 
      * expected polygon
      * 
-     * @throws Exception
      */
     @Test 
     public void testSimple() throws Exception {
@@ -294,7 +310,6 @@ public class GetFeatureInfoTest extends WMSTestSupport {
      * Tests property selection 
      * expected polygon
      * 
-     * @throws Exception
      */
     @Test 
     public void testSelectPropertiesVector() throws Exception {
@@ -318,7 +333,6 @@ public class GetFeatureInfoTest extends WMSTestSupport {
      * Tests a simple GetFeatureInfo works, and that the result contains the
      * expected polygon
      * 
-     * @throws Exception
      */
     @Test 
     public void testSimpleHtml() throws Exception {
@@ -341,7 +355,6 @@ public class GetFeatureInfoTest extends WMSTestSupport {
      * Tests GetFeatureInfo with a buffer specified works, and that the result contains the
      * expected polygon
      * 
-     * @throws Exception
      */
     @Test 
     public void testBuffer() throws Exception {
@@ -375,7 +388,6 @@ public class GetFeatureInfoTest extends WMSTestSupport {
      * Tests GetFeatureInfo with a buffer specified works, and that the result contains the
      * expected polygon
      * 
-     * @throws Exception
      */
     @Test 
     public void testAutoBuffer() throws Exception {
@@ -400,7 +412,6 @@ public class GetFeatureInfoTest extends WMSTestSupport {
     /**
      * Tests GetFeatureInfo uses the env params
      * 
-     * @throws Exception
      */
     @Test 
     public void testParameterizedStyle() throws Exception {
@@ -425,7 +436,6 @@ public class GetFeatureInfoTest extends WMSTestSupport {
      * Tests GetFeatureInfo with a buffer specified works, and that the result contains the
      * expected polygon
      * 
-     * @throws Exception
      */
     @Test 
     public void testBufferScales() throws Exception {
@@ -469,7 +479,6 @@ public class GetFeatureInfoTest extends WMSTestSupport {
      * Tests a GetFeatureInfo again works, and that the result contains the
      * expected polygon
      * 
-     * @throws Exception
      */
     @Test 
     public void testTwoLayers() throws Exception {
@@ -488,7 +497,6 @@ public class GetFeatureInfoTest extends WMSTestSupport {
      * Tests a GetFeatureInfo again works, and that the result contains the
      * expected polygon
      * 
-     * @throws Exception
      */
     @Test 
     public void testSelectPropertiesTwoVectorLayers() throws Exception {
@@ -515,7 +523,6 @@ public class GetFeatureInfoTest extends WMSTestSupport {
      * Tests a GetFeatureInfo again works, and that the result contains the
      * expected polygon
      * 
-     * @throws Exception
      */
     @Test 
     public void testSelectPropertiesTwoVectorLayersOneList() throws Exception {
@@ -544,7 +551,6 @@ public class GetFeatureInfoTest extends WMSTestSupport {
     /**
      * Tests that FEATURE_COUNT is respected globally, not just per layer
      * 
-     * @throws Exception
      */
     @Test 
     public void testTwoLayersFeatureCount() throws Exception {
@@ -574,7 +580,6 @@ public class GetFeatureInfoTest extends WMSTestSupport {
      * of returning the text format as in
      * https://osgeo-org.atlassian.net/browse/GEOS-1924
      * 
-     * @throws Exception
      */
     @Test 
     public void testUknownFormat() throws Exception {
@@ -678,7 +683,6 @@ public class GetFeatureInfoTest extends WMSTestSupport {
     
     /**
      * Check we report back an exception when query_layer contains layers not part of LAYERS
-     * @throws Exception
      */
     @Test
     public void testUnkonwnQueryLayer() throws Exception {
@@ -872,4 +876,88 @@ public class GetFeatureInfoTest extends WMSTestSupport {
        assertPixel(image, 150, 150, Color.BLUE);
    }
    
+   /**
+    * Test GetFeatureInfo on a group layer with some no-queryable layers
+    * @throws Exception
+    */
+   @Test
+   public void testGroupLayerWithNotQueryableLayers() throws Exception {
+       Catalog catalog = getCatalog();
+       CatalogFactory factory = catalog.getFactory();
+       WorkspaceInfo workspace = catalog.getWorkspaceByName(MockData.CITE_PREFIX);
+       String groupLayer = "glqueryable";
+       
+       // Only last layer will be queryable.
+       LayerInfo buildingsLayer = catalog.getLayerByName(getLayerId(MockData.BUILDINGS));
+       buildingsLayer.setQueryable(false);
+       catalog.save(buildingsLayer);
+       LayerInfo bridgesLayer = catalog.getLayerByName(getLayerId(MockData.BRIDGES));
+       bridgesLayer.setQueryable(false);
+       catalog.save(bridgesLayer);
+       LayerInfo forestLayer = catalog.getLayerByName(getLayerId(MockData.FORESTS));
+       forestLayer.setQueryable(true);
+       catalog.save(forestLayer);
+       
+       LayerGroupInfo layerGroup = factory.createLayerGroup();
+       layerGroup.setName(groupLayer);
+       layerGroup.setWorkspace(workspace);
+       layerGroup.getLayers().add(buildingsLayer);
+       layerGroup.getLayers().add(bridgesLayer);
+       layerGroup.getLayers().add(forestLayer);
+       new CatalogBuilder(catalog).calculateLayerGroupBounds(layerGroup);
+       catalog.add(layerGroup);
+       
+       String name = MockData.CITE_PREFIX+":"+groupLayer;
+       String request = "wms?bbox=-0.002,-0.002,0.002,0.002&styles=&format=jpeg" +
+               "&info_format=text/plain&request=GetFeatureInfo&layers="
+               + name + "&query_layers=" + name + "&width=20&height=20&x=10&y=10";
+       
+       String result = getAsString(request);
+       assertNotNull(result);
+       assertTrue(result.indexOf("Green Forest") > 0);
+       
+       buildingsLayer.setQueryable(true);
+       catalog.save(buildingsLayer);
+       bridgesLayer.setQueryable(true);
+       catalog.save(bridgesLayer);
+       
+       catalog.remove(layerGroup);
+   }
+   
+   /**
+    * Test GetFeatureInfo on a group layer with no-queryable flag activated
+    * @throws Exception
+    */
+   @Test
+   public void testNotQueryableGroupLayer() throws Exception {
+       Catalog catalog = getCatalog();
+       CatalogFactory factory = catalog.getFactory();
+       WorkspaceInfo workspace = catalog.getWorkspaceByName(MockData.CITE_PREFIX);
+       String groupLayer = "glnotqueryable";
+       
+       LayerGroupInfo layerGroup = factory.createLayerGroup();
+       layerGroup.setName(groupLayer);
+       layerGroup.setWorkspace(workspace);
+       layerGroup.getLayers().add( catalog.getLayerByName(getLayerId(MockData.FORESTS)) );
+       new CatalogBuilder(catalog).calculateLayerGroupBounds(layerGroup);
+       catalog.add(layerGroup);
+       
+       String name = MockData.CITE_PREFIX+":"+groupLayer;
+       String request = "wms?bbox=-0.002,-0.002,0.002,0.002&styles=&format=jpeg" +
+               "&info_format=text/plain&request=GetFeatureInfo&layers="
+               + name + "&query_layers=" + name + "&width=20&height=20&x=10&y=10";
+       
+       String result = getAsString(request);
+       assertNotNull(result);
+       assertTrue(result.indexOf("Green Forest") > 0);
+       
+       // Test no-queryable flag activated
+       layerGroup.setQueryDisabled(true);
+       
+       result = getAsString(request);
+       assertNotNull(result);
+       assertTrue(result.indexOf("no layer was queryable") > 0);
+       
+       catalog.remove(layerGroup);
+   }
 }

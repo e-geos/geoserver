@@ -1,4 +1,4 @@
-/* (c) 2014 - 2015 Open Source Geospatial Foundation - all rights reserved
+/* (c) 2014 - 2016 Open Source Geospatial Foundation - all rights reserved
  * (c) 2001 - 2013 OpenPlans
  * This code is licensed under the GPL 2.0 license, available at the root
  * application directory.
@@ -73,24 +73,23 @@ import org.xmlpull.v1.XmlPullParserFactory;
  * Dispatches an http request to an open web service (OWS).
  * <p>
  * An OWS request contains three bits of information:
- *         <ol>
- *                 <li>The service being called
- *                 <li>The operation of the service to execute
- *                 <li>The version of the service ( optional )
- *  </ol>
- *  Additional, an OWS request can contain an arbitray number of additional
- *  parameters.
+ * </p>
+ * <ol>
+ * <li>The service being called
+ * <li>The operation of the service to execute
+ * <li>The version of the service ( optional )
+ * </ol>
+ * <p>
+ * Additional, an OWS request can contain an arbitray number of additional parameters.
  * </p>
  * <p>
- * An OWS request can be specified in two forms. The first form is known as "KVP"
- * in which all the parameters come in the form of a set of key-value pairs.
- * Commonly this type of request is made in an http "GET" request, the parameters
- * being specified in the query string:
+ * An OWS request can be specified in two forms. The first form is known as "KVP" in which all the parameters come in the form of a set of key-value
+ * pairs. Commonly this type of request is made in an http "GET" request, the parameters being specified in the query string:
  *
- *  <pre>
- *          <code>http://www.xyz.com/geoserver?service=someService&request=someRequest&version=X.Y.Z&param1=...&param2=...
- *  </pre>
- *
+ * <pre>
+ * <code>http://www.xyz.com/geoserver?service=someService&amp;request=someRequest&amp;version=X.Y.Z&amp;param1=...&amp;param2=...</code>
+ * </pre>
+ * <p>
  *  This type of request can also be made in a "POST" request in with a
  *  mime-type of "application/x-www-form-urlencoded".
  * </p>
@@ -98,27 +97,21 @@ import org.xmlpull.v1.XmlPullParserFactory;
  * The second form is known as "XML" in which all the parameters come in the
  * form of an xml document. This type of request is made in an http "POST"
  * request.
- *
- *         <pre>
- *                 <code>
+ * </p>
+ * <pre><code>
  *  &lt;?xml version="1.0" encoding="UTF-8"?&gt;
  *  &lt;SomeRequest service="someService" version="X.Y.Z"&gt;
  *    &lt;Param1&gt;...&lt;/Param1&gt;
  *    &lt;Param2&gt;...&lt;/Param2&gt;
  *    ...
  *  &lt;/SomeRequest&gt;
- *                 </code>
- *         </pre>
- * </p>
+ * </code></pre>
  * <p>
- * When a request is received, the <b>service</b> the <b>version</b> parameters
- * are used to locate a service desciptor, an instance of {@link Service}. With
- * the service descriptor, the <b>request</b> parameter is used to locate the
- * operation of the service to call.
+ * When a request is received, the <b>service</b> the <b>version</b> parameters are used to locate a service desciptor, an instance of {@link Service}
+ * . With the service descriptor, the <b>request</b> parameter is used to locate the operation of the service to call.
  * </p>
  *
  * @author Justin Deoliveira, The Open Planning Project, jdeolive@openplans.org
- *
  */
 public class Dispatcher extends AbstractController {
     /**
@@ -175,7 +168,7 @@ public class Dispatcher extends AbstractController {
      * If set to <code>true</code>, the dispatcher with throw exceptions when
      * it encounters something that is not 100% compliant with CITE standards.
      * An example would be a request which specifies the servce in the context
-     * path: '.../geoserver/wfs?request=...' and not with the kvp '&service=wfs'.
+     * path: '.../geoserver/wfs?request=...' and not with the kvp '&amp;service=wfs'.
      * </p>
      *
      * @param citeCompliant <code>true</code> to set compliance,
@@ -309,8 +302,8 @@ public class Dispatcher extends AbstractController {
         for ( DispatcherCallback cb : callbacks ) {
             try {
                 cb.finished( req );
-            } catch (Exception e) {
-                logger.log(Level.WARNING, "Error firing finished callback for "+cb.getClass(), e);
+            } catch (Throwable t) {
+                logger.log(Level.WARNING, "Error firing finished callback for "+cb.getClass(), t);
             }
         }
     }
@@ -704,7 +697,9 @@ public class Dispatcher extends AbstractController {
                     if (kvpParsed && xmlParsed || (!kvpParsed && !xmlParsed)) {
                         throw new ServiceException(
                                 "Could not find request reader (either kvp or xml) for: "
-                                        + parameterType.getName());
+                                        + parameterType.getName() 
+                                        + ", it might be that some request parameters are missing, "
+                                        + "please check the documentation");
                     } else if (kvpParsed) {
                         throw new ServiceException("Could not parse the KVP for: "
                                 + parameterType.getName());
@@ -1605,7 +1600,9 @@ public class Dispatcher extends AbstractController {
 
     void exception(Throwable t, Service service, Request request) {
         Throwable current = t;
-        while (current != null && !(current instanceof ClientStreamAbortedException) && !(isSecurityException(current))) {
+        while (current != null && !(current instanceof ClientStreamAbortedException) 
+                && !isSecurityException(current)
+                && !(current instanceof HttpErrorCodeException)) {
             if(current instanceof SAXException)
                 current = ((SAXException) current).getException();
             else
@@ -1615,46 +1612,53 @@ public class Dispatcher extends AbstractController {
             logger.log(Level.FINER, "Client has closed stream", t);
             return;
         }
-        if ( isSecurityException(current))
+        if ( isSecurityException(current)) {
             throw (RuntimeException) current;
-        
-        
-        //unwind the exception stack until we find one we know about 
-        Throwable cause = t;
-        while( cause != null ) {
-            if ( cause instanceof ServiceException ) {
-                break;
-            }
-            if ( cause instanceof HttpErrorCodeException ) {
-                break;
-            }
-            if ( isSecurityException(cause) ) {
-                break;
-            }
-            
-            cause = cause.getCause();
         }
         
-        if ( cause == null ) {
-            //did not fine a "special" exception, create a service exception
-            // by default
-            cause = new ServiceException(t);
-        }
-        
-        if (!(cause instanceof HttpErrorCodeException)) {
-            logger.log(Level.SEVERE, "", t);
-        } else {
-            int errorCode = ((HttpErrorCodeException)cause).getErrorCode();
+        if (current instanceof HttpErrorCodeException) {
+            HttpErrorCodeException ece = (HttpErrorCodeException) current;
+            int errorCode = ece.getErrorCode();
             if (errorCode < 199 || errorCode > 299) {
                 logger.log(Level.FINE, "", t);
-            }
-            else{
+            } else {
                 logger.log(Level.FINER, "", t);
             }
-        }
-
+            
+            try {
+                if(ece.getMessage() != null) {
+                    request.getHttpResponse().sendError(ece.getErrorCode(),ece.getMessage());
+                } else {
+                    request.getHttpResponse().sendError(ece.getErrorCode());
+                }
+                if (ece.getErrorCode() < 400) {
+                    // gwc returns an HttpErrorCodeException for 304s
+                    // we don't want to flag these as errors for upstream filters, ie the monitoring extension
+                    t = null;
+                } 
+            } catch (IOException e) {
+                // means the resposne was already commited something
+                logger.log(Level.FINER, "", t);
+            }
+        } else {
+            logger.log(Level.SEVERE, "", t);
         
-        if ( cause instanceof ServiceException ) {
+            //unwind the exception stack until we find one we know about 
+            Throwable cause = t;
+            while( cause != null ) {
+                if ( cause instanceof ServiceException ) {
+                    break;
+                }
+                
+                cause = cause.getCause();
+            }
+            
+            if ( cause == null ) {
+                // did not fine a "special" exception, create a service exception by default
+                cause = new ServiceException(t);
+            }
+            
+            // at this point we're sure it'a service exception
             ServiceException se = (ServiceException) cause;
             if ( cause != t ) {
                 //copy the message, code + locator, but set cause equal to root
@@ -1662,28 +1666,6 @@ public class Dispatcher extends AbstractController {
             }
             
             handleServiceException(se,service,request);
-        }
-        else if ( cause instanceof HttpErrorCodeException ) {
-            //TODO: log the exception stack trace
-            
-            //set the error code
-            HttpErrorCodeException ece = (HttpErrorCodeException) cause;
-            try {
-            	if(ece.getMessage() != null) {
-                	request.getHttpResponse().sendError(ece.getErrorCode(),ece.getMessage());
-            	} else {
-            		request.getHttpResponse().sendError(ece.getErrorCode());
-            	}
-                if (ece.getErrorCode() < 400) {
-                    // gwc returns an HttpErrorCodeException for 304s
-                    // we don't want to flag these as errors for upstream filters, ie the monitoring extension
-                    t = null;
-                }
-            } 
-            catch (IOException e) {
-                //means the resposne was already commited
-                //TODO: something
-            }
         }
         
         request.error = t;

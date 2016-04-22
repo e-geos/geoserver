@@ -1,4 +1,4 @@
-/* (c) 2014-2015 Open Source Geospatial Foundation - all rights reserved
+/* (c) 2014 - 2016 Open Source Geospatial Foundation - all rights reserved
  * (c) 2014 OpenPlans
  * This code is licensed under the GPL 2.0 license, available at the root
  * application directory.
@@ -145,7 +145,6 @@ public class CoverageDimensionCustomizerReader implements GridCoverage2DReader {
      * @param coverageName the specified coverageName. It may be null in case of {@link GridCoverage2DReader}s 
      * with a single coverage, coming from an old catalog where no coverageName has been stored. 
      * @param info the {@link CoverageStoreInfo} instance used to look for {@link CoverageInfo} instances.
-     * @return 
      */
     public static GridCoverageReader wrap(GridCoverage2DReader delegate, String coverageName,
             CoverageStoreInfo info) {
@@ -181,7 +180,7 @@ public class CoverageDimensionCustomizerReader implements GridCoverage2DReader {
      * on that store.
      * 
      * @param storeInfo the storeInfo to be used to access the catalog
-     * @return
+     *
      */
     private CoverageInfo getCoverageInfo(CoverageStoreInfo storeInfo) {
         Utilities.ensureNonNull("storeInfo", storeInfo);
@@ -605,7 +604,7 @@ public class CoverageDimensionCustomizerReader implements GridCoverage2DReader {
                 builder = formatRange(builder, null);
                 builder.append(')').append(LINE_SEPARATOR);
                 for (final Category category : customCategories) {
-                    builder.append("  ").append(/*category == main ? '\u2023' : */' ').append(' ')
+                    builder.append("  ").append(' ').append(' ')
                           .append(category).append(LINE_SEPARATOR);
                 }
                 return builder.toString();
@@ -677,8 +676,9 @@ public class CoverageDimensionCustomizerReader implements GridCoverage2DReader {
             boolean nodataConfigured = configuredNoDataValues != null
                     && configuredNoDataValues.length > 0;
             // custom categories
-            if (categories != null) {
-                this.customCategories = new ArrayList<Category>(categories.size());
+            int numCategories = 0;
+            if (categories != null && (numCategories = categories.size()) > 0) {
+                this.customCategories = new ArrayList<Category>(numCategories);
                 Category wrapped = null;
                 for (Category category : categories) {
                     wrapped = category;

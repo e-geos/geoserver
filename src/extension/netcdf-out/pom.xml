@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="ISO-8859-1"?>
 <!-- 
- Copyright (C) 2014 - Open Source Geospatial Foundation. All rights reserved.
+ Copyright (C) 2014 - 2016 - Open Source Geospatial Foundation. All rights reserved.
  This code is licensed under the GPL 2.0 license, available at the root
  application directory.
  -->
@@ -103,13 +103,11 @@
   <dependency>
     <groupId>org.slf4j</groupId>
     <artifactId>slf4j-log4j12</artifactId>
-    <version>1.6.4</version>
     <scope>runtime</scope>
   </dependency>
   <dependency>
     <groupId>org.slf4j</groupId>
     <artifactId>log4j-over-slf4j</artifactId>
-    <version>1.6.4</version>
   </dependency>
 
   <!-- TODO: relax this dependency: just need to depends on NetCDF java library from Unidata -->
@@ -134,8 +132,8 @@
     </exclusions>
   </dependency>
   <dependency>
-   <groupId>com.mockrunner</groupId>
-   <artifactId>mockrunner</artifactId>
+   <groupId>org.springframework</groupId>
+   <artifactId>spring-test</artifactId>
    <scope>test</scope>
   </dependency>
   <dependency>

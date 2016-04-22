@@ -34,6 +34,7 @@ import javax.media.jai.JAI;
 import javax.media.jai.operator.ConstantDescriptor;
 
 import org.apache.commons.io.IOUtils;
+import org.geoserver.platform.resource.Files;
 import org.geoserver.wps.WPSException;
 import org.geoserver.wps.resource.WPSFileResource;
 import org.geoserver.wps.resource.WPSResourceManager;
@@ -311,7 +312,7 @@ public class GeorectifyCoverage implements GSProcess {
      * @param tempFolder
      * @param loggingFolder
      * @param timeOut
-     * @return
+     *
      * @throws IOException
      */
     private File warpFile(final File originalFile, final Envelope targetEnvelope, final CoordinateReferenceSystem targetCRS,
@@ -341,7 +342,7 @@ public class GeorectifyCoverage implements GSProcess {
      * @param order the warping polynomial order
      * @param inputFilePath the path of the file referring to the dataset to be warped
      * @param outputFilePath the path of the file referring to the produced dataset
-     * @return
+     *
      */
     private final static String buildWarpArgument(final String targetEnvelope, final Integer width,
             final Integer height, final String targetCrs, final Integer order,
@@ -381,7 +382,7 @@ public class GeorectifyCoverage implements GSProcess {
      * Parse the bounding box to be used by gdalwarp command
      * 
      * @param boundingBox
-     * @return
+     *
      */
     private static String parseBBox(Envelope re) {
         if(re == null) {
@@ -503,7 +504,7 @@ public class GeorectifyCoverage implements GSProcess {
     /**
      * @param gcps
      * @param gcpNum
-     * @return
+     *
      */
     private String parseGcps(String gcps, int[] gcpNum) {
         Matcher gcpMatcher = GCP_PATTERN.matcher(gcps);

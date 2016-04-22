@@ -1,4 +1,4 @@
-/* (c) 2014 Open Source Geospatial Foundation - all rights reserved
+/* (c) 2014 - 2015 Open Source Geospatial Foundation - all rights reserved
  * (c) 2001 - 2013 OpenPlans
  * This code is licensed under the GPL 2.0 license, available at the root
  * application directory.
@@ -67,14 +67,13 @@ abstract class LimitedOutputStream extends FilterOutputStream {
      * blocks until input data is available, the end of the stream is detected, or an exception is thrown.
      * <p>
      * This method simply performs <code>in.read()</code> and returns the result.
-     * 
      * @param b the b
-     * @return the next byte of data, or <code>-1</code> if the end of the stream is reached.
+     * 
      * @throws IOException if an I/O error occurs.
      * @see java.io.FilterInputStream#in
      */
     public void write(int b) throws IOException {
-        super.write(b);
+        out.write(b);
         count++;
         checkLimit();
     }
@@ -88,13 +87,11 @@ abstract class LimitedOutputStream extends FilterOutputStream {
      * @param b the buffer into which the data is read.
      * @param off The start offset in the destination array <code>b</code>.
      * @param len the maximum number of bytes read.
-     * @return the total number of bytes read into the buffer, or <code>-1</code> if there is no more data because the end of the stream has been
-     *         reached.
      * @throws IOException if an I/O error occurs.
      * @see java.io.FilterInputStream#in
      */
     public void write(byte[] b, int off, int len) throws IOException {
-        super.write(b, off, len);
+        out.write(b, off, len);
         if (len > 0) {
             count += len;
             checkLimit();

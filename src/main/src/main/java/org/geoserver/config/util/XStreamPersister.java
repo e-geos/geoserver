@@ -1,4 +1,4 @@
-/* (c) 2014 - 2015 Open Source Geospatial Foundation - all rights reserved
+/* (c) 2014 - 2016 Open Source Geospatial Foundation - all rights reserved
  * (c) 2001 - 2013 OpenPlans
  * This code is licensed under the GPL 2.0 license, available at the root
  * application directory.
@@ -148,6 +148,7 @@ import com.thoughtworks.xstream.io.HierarchicalStreamDriver;
 import com.thoughtworks.xstream.io.HierarchicalStreamReader;
 import com.thoughtworks.xstream.io.HierarchicalStreamWriter;
 import com.thoughtworks.xstream.mapper.ClassAliasingMapper;
+import com.thoughtworks.xstream.mapper.DynamicProxyMapper;
 import com.thoughtworks.xstream.mapper.Mapper;
 import com.vividsolutions.jts.geom.Geometry;
 
@@ -467,6 +468,7 @@ public class XStreamPersister {
         xs.allowTypeHierarchy(Info.class);
         xs.allowTypeHierarchy(Multimap.class);
         xs.allowTypeHierarchy(JAIInfo.class);
+        xs.allowTypes(new Class[] {DynamicProxyMapper.DynamicProxy.class});
         xs.allowTypes(new String[] { "java.util.Collections$SingletonList" });
         xs.allowTypesByWildcard(new String[] { "org.geoserver.catalog.**" });
         xs.allowTypesByWildcard(new String[] { "org.geoserver.security.**" });
@@ -609,7 +611,7 @@ public class XStreamPersister {
      * Builds a converter that will marshal/unmarshal the target class by reference, that is, by
      * storing the object id as opposed to fully serializing it
      * @param clazz
-     * @return
+     *
      */
     public ReferenceConverter buildReferenceConverter(Class clazz) {
         return new ReferenceConverter(clazz);
@@ -618,7 +620,7 @@ public class XStreamPersister {
     /**
      * Same as {@link #buildReferenceConverter(Class)}, but works against a collection of objects
      * @param clazz
-     * @return
+     *
      */
     public ReferenceCollectionConverter buildReferenceCollectionConverter(Class clazz) {
         return new ReferenceCollectionConverter(clazz);
@@ -1325,74 +1327,61 @@ public class XStreamPersister {
         @Override
         public Object unmarshal(HierarchicalStreamReader reader,
                 UnmarshallingContext context) {
-             int[] high,low;
-            
-            //reader.moveDown(); //grid
-            
-            reader.moveDown(); //range
-            
-            reader.moveDown(); //low
-            low = toIntArray( reader.getValue() );
-            reader.moveUp();
-            reader.moveDown(); //high
-            high = toIntArray( reader.getValue() );
-            reader.moveUp();
-            
-            reader.moveUp(); //range
-            
-            if ( reader.hasMoreChildren() ) {
-                reader.moveDown(); //transform or crs
-            }
-            
-            AffineTransform2D gridToCRS = null;
-            if ( "transform".equals( reader.getNodeName() ) ) {
-                double sx,sy,shx,shy,tx,ty;
-                
-                reader.moveDown(); //scaleX
-                sx = Double.parseDouble( reader.getValue() );
-                reader.moveUp();
-                
-                reader.moveDown(); //scaleY
-                sy = Double.parseDouble( reader.getValue() );
-                reader.moveUp();
-                
-                
-                reader.moveDown(); //shearX
-                shx = Double.parseDouble( reader.getValue() );
-                reader.moveUp();
-                
-                reader.moveDown(); //shearY
-                shy = Double.parseDouble( reader.getValue() );
-                reader.moveUp();
-                
-                reader.moveDown(); //translateX
-                tx = Double.parseDouble( reader.getValue() );
-                reader.moveUp();
-                
-                reader.moveDown(); //translateY
-                ty = Double.parseDouble( reader.getValue() );
-                reader.moveUp();
-                
-                
-
-                // set tranform
-                gridToCRS = new AffineTransform2D(sx, shx, shy, sy, tx, ty);
-                reader.moveUp();
-                if ( reader.hasMoreChildren() ) {
-                    reader.moveDown(); //crs
-                }
-            }
-            
+            int[] high = null, low = null;
             CoordinateReferenceSystem crs = null;
-            if ( "crs".equals( reader.getNodeName() ) ) {
-                crs = (CoordinateReferenceSystem) context.convertAnother( null, CoordinateReferenceSystem.class, 
-                    new SingleValueConverterWrapper( new SRSConverter() ));
+            AffineTransform2D gridToCRS = null;
+            GeneralGridEnvelope gridRange = null;
+            
+            while (reader.hasMoreChildren()) {
+                reader.moveDown();
+                if("range".equals(reader.getNodeName())) {
+                    while (reader.hasMoreChildren()) {
+                        reader.moveDown();
+                        if("low".equals(reader.getNodeName())) {
+                            low = toIntArray( reader.getValue() );
+                        }
+                        else if ("high".equals(reader.getNodeName())) {
+                            high = toIntArray( reader.getValue() );
+                        }
+                        reader.moveUp();
+                    }
+                    // new grid range
+                    gridRange = new GeneralGridEnvelope(low, high);
+                }
+                if ( "crs".equals( reader.getNodeName() ) ) {
+                    crs = (CoordinateReferenceSystem) context.convertAnother( null, CoordinateReferenceSystem.class, 
+                            new SingleValueConverterWrapper( new SRSConverter() ));
+                }
+                else if ("transform".equals(reader.getNodeName())) {
+                    double sx = 1.0, sy = 1.0, shx = 0.0, shy = 0.0, tx = 0.0, ty = 0.0;
+                    while (reader.hasMoreChildren()) {
+                        reader.moveDown();
+                        if("scaleX".equals(reader.getNodeName())) {
+                            sx = Double.parseDouble( reader.getValue() );
+                        }
+                        else if ("scaleY".equals(reader.getNodeName())) {
+                            sy = Double.parseDouble( reader.getValue() );
+                        }
+                        else if ("shearX".equals(reader.getNodeName())) {
+                            shx = Double.parseDouble( reader.getValue() );
+                        }
+                        else if ("shearY".equals(reader.getNodeName())) {
+                            shy = Double.parseDouble( reader.getValue() );
+                        }
+                        else if ("translateX".equals(reader.getNodeName())) {
+                            tx = Double.parseDouble( reader.getValue() );
+                        }
+                        else if ("translateY".equals(reader.getNodeName())) {
+                            ty = Double.parseDouble( reader.getValue() );
+                        }
+                        reader.moveUp();
+                    }
+                    // set tranform
+                    gridToCRS = new AffineTransform2D(sx, shx, shy, sy, tx, ty);
+                }
                 reader.moveUp();
             }
-            
-            // new grid range
-            GeneralGridEnvelope gridRange = new GeneralGridEnvelope(low, high);
-            
+
             GridGeometry2D gg = new GridGeometry2D( gridRange, gridToCRS, crs );
             return serializationMethodInvoker.callReadResolve(gg);
         }
@@ -2041,76 +2030,89 @@ public class XStreamPersister {
         }
         
         @SuppressWarnings("rawtypes")
-		public Object unmarshal(HierarchicalStreamReader reader, UnmarshallingContext context) {        	
-        	String name =null; 
-            String sql = null;  
-            String geomName =null;
-            Class type = null;
-            int srid=-1;
+        public Object unmarshal(HierarchicalStreamReader reader, UnmarshallingContext context) {
+            String name = null;
+            String sql = null;
             List<String> primaryKeys = new ArrayList<String>();
-            List<VirtualTableParameter> params =new ArrayList<VirtualTableParameter>();
-            Boolean escapeSql=false;
-            while(reader.hasMoreChildren()) {
+            List<VirtualTableParameter> params = new ArrayList<VirtualTableParameter>();
+            List<String> geomNames=new ArrayList<String>();
+            List<Class> types=new ArrayList<Class>();
+            List<Integer> srids= new ArrayList<Integer>();
+            
+            Boolean escapeSql = false;
+            while (reader.hasMoreChildren()) {
                 reader.moveDown();
-                if(reader.getNodeName().equals("keyColumn")) {
+                if (reader.getNodeName().equals("keyColumn")) {
                     primaryKeys.add(reader.getValue());
-                } else if(reader.getNodeName().equals("geometry")) {
-                	while(reader.hasMoreChildren()) {
-                		reader.moveDown();
-                		if (reader.getNodeName().equals("name"))
-                			geomName=reader.getValue();
-                		else if (reader.getNodeName().equals("type")){
+                } else if (reader.getNodeName().equals("geometry")) {
+                    String geomName = null;
+                    Class type = null;
+                    int srid = -1;                    
+                    while (reader.hasMoreChildren()) {
+                        reader.moveDown();
+                        if (reader.getNodeName().equals("name"))
+                            geomName = reader.getValue();
+                        else if (reader.getNodeName().equals("type")) {
                             Geometries geomType = Geometries.getForName(reader.getValue());
-                            type = geomType == null ? Geometry.class : geomType.getBinding();                			
-                		}
-                		else if (reader.getNodeName().equals("srid"))
-                			srid = Converters.convert(reader.getValue(),Integer.class);	
-                		reader.moveUp();
-                	}
-                } else if(reader.getNodeName().equals("parameter")) {
+                            type = geomType == null ? Geometry.class : geomType.getBinding();
+                        } else if (reader.getNodeName().equals("srid")) {
+                            srid = Converters.convert(reader.getValue(), Integer.class);
+                        }
+                        reader.moveUp();
+                    }                    
+                    geomNames.add(geomName);
+                    types.add(type);
+                    srids.add(srid);                    
+                } else if (reader.getNodeName().equals("parameter")) {
                     String pname = null;
                     String defaultValue = null;
                     Validator validator = null;
-                    while(reader.hasMoreChildren()) {
+                    while (reader.hasMoreChildren()) {
                         reader.moveDown();
-                        if(reader.getNodeName().equals("name")) {
-                        	pname = reader.getValue();
-                        } else if(reader.getNodeName().equals("defaultValue")) {
+                        if (reader.getNodeName().equals("name")) {
+                            pname = reader.getValue();
+                        } else if (reader.getNodeName().equals("defaultValue")) {
                             defaultValue = reader.getValue();
-                        } else if(reader.getNodeName().equals("regexpValidator")) {
+                        } else if (reader.getNodeName().equals("regexpValidator")) {
                             validator = new RegexpValidator(reader.getValue());
                         }
                         reader.moveUp();
-                    }          
-                    if (pname==null)
-                    	throw new IllegalArgumentException("Expect name but could not find it in property tag");                    
-                	params.add(new VirtualTableParameter(pname, defaultValue, validator));
-                } else if(reader.getNodeName().equals("escapeSql")) {
-            		escapeSql=Boolean.valueOf(reader.getValue());
-                } else if(reader.getNodeName().equals("name")) {
-            		name=reader.getValue();
-                } else if(reader.getNodeName().equals("sql")) {
-            		sql=reader.getValue();
+                    }
+                    if (pname == null) {
+                        throw new IllegalArgumentException(
+                                "Expect name but could not find it in property tag");
+                    }
+                    params.add(new VirtualTableParameter(pname, defaultValue, validator));
+                } else if (reader.getNodeName().equals("escapeSql")) {
+                    escapeSql = Boolean.valueOf(reader.getValue());
+                } else if (reader.getNodeName().equals("name")) {
+                    name = reader.getValue();
+                } else if (reader.getNodeName().equals("sql")) {
+                    sql = reader.getValue();
                 }
                 reader.moveUp();
             }
-            if (name == null)
-            	throw new IllegalArgumentException("Expect name but could not find it");
-            if (sql == null)
-            	throw new IllegalArgumentException("Expect sql but could not find it");
-            
+            if (name == null) {
+                throw new IllegalArgumentException("Expect name but could not find it");
+            }
+            if (sql == null) {
+                throw new IllegalArgumentException("Expect sql but could not find it");
+            }
+
             VirtualTable vt = new VirtualTable(name, sql, false);
-            
-            if(geomName!=null && type!=null)
-            	vt.addGeometryMetadatata(geomName, type, srid);
-            for(VirtualTableParameter p:params)
-            	vt.addParameter(p);
+
+            for(int i=0; i<geomNames.size();i++){
+                vt.addGeometryMetadatata(geomNames.get(i), types.get(i), srids.get(i));
+            }
+            for (VirtualTableParameter p : params) {
+                vt.addParameter(p);
+            }
             vt.setEscapeSql(escapeSql);
             vt.setPrimaryKeyColumns(primaryKeys);
-            
+
             return vt;
         }
-        
+
         public boolean canConvert(Class type) {
             return VirtualTable.class.isAssignableFrom(type);
         }

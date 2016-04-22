@@ -8,7 +8,7 @@ package org.geoserver.wms;
 import java.util.List;
 import java.util.Set;
 
-import org.geoserver.catalog.LayerInfo;
+import org.geoserver.catalog.PublishedInfo;
 import org.geotools.util.NumberRange;
 
 /**
@@ -61,9 +61,9 @@ public interface ExtendedCapabilitiesProvider extends org.geoserver.ExtendedCapa
      * 
      * @param layer
      * @param scaleDenominators
-     * @return
+     *
      */
-    NumberRange<Double> overrideScaleDenominators(LayerInfo layer,
+    NumberRange<Double> overrideScaleDenominators(PublishedInfo layer,
             NumberRange<Double> scaleDenominators);
     
 }

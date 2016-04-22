@@ -881,7 +881,10 @@ public class Capabilities_1_3_0_Transformer extends TransformerBase {
                 commit();
             } catch (Exception e) {
                 // report what layer we failed on to help the admin locate and fix it
+                
                 if (skipping) {
+                    LOGGER.log(Level.WARNING,
+                            "Error writing metadata; skipping layer: " + layer.getName(), e);
                     reset();
                 } else { 
                     throw new ServiceException(
@@ -996,7 +999,7 @@ public class Capabilities_1_3_0_Transformer extends TransformerBase {
          * 
          * @param layer
          */
-        private void handleScaleDenominator(final LayerInfo layer) {
+        private void handleScaleDenominator(final PublishedInfo layer) {
 
             try {
                 NumberRange<Double> scaleDenominators = CapabilityUtil
@@ -1117,7 +1120,7 @@ public class Capabilities_1_3_0_Transformer extends TransformerBase {
          * other layer groups
          * 
          * @param allGroups
-         * @return
+         *
          */
         private List<LayerGroupInfo> filterNestedGroups(Iterator<LayerGroupInfo> iterator) {
             List<LayerGroupInfo> allGroups = new ArrayList<LayerGroupInfo>();
@@ -1185,7 +1188,10 @@ public class Capabilities_1_3_0_Transformer extends TransformerBase {
                 }
                 
                 layersAlreadyProcessed.add(layerGroup.getRootLayer());
-            }                
+            }       
+            
+            // handle data attribution
+            handleAttribution(layerGroup);
             
             // handle AuthorityURL
             handleAuthorityURL(layerGroup.getAuthorityURLs());
@@ -1193,15 +1199,19 @@ public class Capabilities_1_3_0_Transformer extends TransformerBase {
             // handle identifiers
             handleLayerIdentifiers(layerGroup.getIdentifiers());
             
-            // Aggregated metadata links (see GEOS-4500)
-            Set<MetadataLinkInfo> aggregatedLinks = new HashSet<MetadataLinkInfo>();
-            for (LayerInfo layer : Iterables.filter(layerGroup.getLayers(), LayerInfo.class)) {
-                List<MetadataLinkInfo> metadataLinks = layer.getResource().getMetadataLinks();
-                if (metadataLinks != null) {
-                    aggregatedLinks.addAll(metadataLinks);
+            Collection<MetadataLinkInfo> metadataLinks = layerGroup.getMetadataLinks();
+            if (metadataLinks == null || metadataLinks.isEmpty()) {
+                //Aggregated metadata links (see GEOS-4500)               
+                Set<MetadataLinkInfo> aggregatedLinks = new HashSet<MetadataLinkInfo>();
+                for (LayerInfo layer : Iterables.filter(layerGroup.getLayers(), LayerInfo.class)) {
+                    List<MetadataLinkInfo> metadataLinksLayer = layer.getResource().getMetadataLinks();
+                    if (metadataLinksLayer != null) {
+                        aggregatedLinks.addAll(metadataLinksLayer);
+                    }
                 }
+                metadataLinks = aggregatedLinks;
             }
-            handleMetadataList(aggregatedLinks);
+            handleMetadataList(metadataLinks);
 
             // handle children layers and groups
             if (!LayerGroupInfo.Mode.SINGLE.equals(layerGroup.getMode())) {
@@ -1221,53 +1231,57 @@ public class Capabilities_1_3_0_Transformer extends TransformerBase {
             // the layer style is not provided since the group does just have
             // one possibility, the lack of styles that will make it use
             // the default ones for each layer
+            
+            handleScaleDenominator(layerGroup);
 
             end("Layer");            
         }
         
-        protected void handleAttribution(LayerInfo layer) {
+        protected void handleAttribution(PublishedInfo layer) {
             AttributionInfo attribution = layer.getAttribution();
 
-            String title = attribution.getTitle();
-            String url = attribution.getHref();
-            String logoURL = attribution.getLogoURL();
-            String logoType = attribution.getLogoType();
-            int logoWidth = attribution.getLogoWidth();
-            int logoHeight = attribution.getLogoHeight();
-
-            boolean titleGood = (title != null), urlGood = (url != null), logoGood = (logoURL != null
-                    && logoType != null && logoWidth > 0 && logoHeight > 0);
-
-            if (titleGood || urlGood || logoGood) {
-                start("Attribution");
-                if (titleGood)
-                    element("Title", title);
-
-                if (urlGood) {
-                    AttributesImpl urlAttributes = new AttributesImpl();
-                    urlAttributes.addAttribute("", "xmlns:xlink", "xmlns:xlink", "", XLINK_NS);
-                    urlAttributes.addAttribute(XLINK_NS, "type", "xlink:type", "", "simple");
-                    urlAttributes.addAttribute(XLINK_NS, "href", "xlink:href", "", url);
-                    element("OnlineResource", null, urlAttributes);
+            if (attribution != null) {
+                String title = attribution.getTitle();
+                String url = attribution.getHref();
+                String logoURL = attribution.getLogoURL();
+                String logoType = attribution.getLogoType();
+                int logoWidth = attribution.getLogoWidth();
+                int logoHeight = attribution.getLogoHeight();
+    
+                boolean titleGood = (title != null), urlGood = (url != null), logoGood = (logoURL != null
+                        && logoType != null && logoWidth > 0 && logoHeight > 0);
+    
+                if (titleGood || urlGood || logoGood) {
+                    start("Attribution");
+                    if (titleGood)
+                        element("Title", title);
+    
+                    if (urlGood) {
+                        AttributesImpl urlAttributes = new AttributesImpl();
+                        urlAttributes.addAttribute("", "xmlns:xlink", "xmlns:xlink", "", XLINK_NS);
+                        urlAttributes.addAttribute(XLINK_NS, "type", "xlink:type", "", "simple");
+                        urlAttributes.addAttribute(XLINK_NS, "href", "xlink:href", "", url);
+                        element("OnlineResource", null, urlAttributes);
+                    }
+    
+                    if (logoGood) {
+                        AttributesImpl logoAttributes = new AttributesImpl();
+                        logoAttributes.addAttribute("", "", "height", "", "" + logoHeight);
+                        logoAttributes.addAttribute("", "", "width", "", "" + logoWidth);
+                        start("LogoURL", logoAttributes);
+                        element("Format", logoType);
+    
+                        AttributesImpl urlAttributes = new AttributesImpl();
+                        urlAttributes.addAttribute("", "xmlns:xlink", "xmlns:xlink", "", XLINK_NS);
+                        urlAttributes.addAttribute(XLINK_NS, "type", "xlink:type", "", "simple");
+                        urlAttributes.addAttribute(XLINK_NS, "href", "xlink:href", "", logoURL);
+    
+                        element("OnlineResource", null, urlAttributes);
+                        end("LogoURL");
+                    }
+    
+                    end("Attribution");
                 }
-
-                if (logoGood) {
-                    AttributesImpl logoAttributes = new AttributesImpl();
-                    logoAttributes.addAttribute("", "", "height", "", "" + logoHeight);
-                    logoAttributes.addAttribute("", "", "width", "", "" + logoWidth);
-                    start("LogoURL", logoAttributes);
-                    element("Format", logoType);
-
-                    AttributesImpl urlAttributes = new AttributesImpl();
-                    urlAttributes.addAttribute("", "xmlns:xlink", "xmlns:xlink", "", XLINK_NS);
-                    urlAttributes.addAttribute(XLINK_NS, "type", "xlink:type", "", "simple");
-                    urlAttributes.addAttribute(XLINK_NS, "href", "xlink:href", "", logoURL);
-
-                    element("OnlineResource", null, urlAttributes);
-                    end("LogoURL");
-                }
-
-                end("Attribution");
             }
         }
 

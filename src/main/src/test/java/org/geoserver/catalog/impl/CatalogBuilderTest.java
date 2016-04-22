@@ -14,6 +14,7 @@ import java.net.URL;
 import java.util.Arrays;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Locale;
 
 import org.geoserver.catalog.Catalog;
 import org.geoserver.catalog.CatalogBuilder;
@@ -219,6 +220,16 @@ public class CatalogBuilderTest extends GeoServerMockTestSupport {
     }
     
     @Test
+    public void testSingleBandedCoverage_GEOS7311() throws Exception {
+        Locale defaultLocale = Locale.getDefault();
+        Locale.setDefault(new Locale("es", "ES"));
+        testSingleBandedCoverage();
+        Locale.setDefault(new Locale("fr", "FR"));
+        testSingleBandedCoverage();
+        Locale.setDefault(defaultLocale);
+    }
+ 
+    @Test
     public void testMultiBandCoverage() throws Exception {
         Catalog cat = getCatalog();
         CatalogBuilder cb = new CatalogBuilder(cat);
@@ -337,7 +348,6 @@ public class CatalogBuilderTest extends GeoServerMockTestSupport {
     /**
      * Tests we can build properly the WMS store and the WMS layer
      * 
-     * @throws Exception
      */
     @Test
     public void testWMS() throws Exception {

@@ -11,7 +11,6 @@ import java.io.BufferedOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
 import java.io.FilenameFilter;
 import java.io.IOException;
 import java.io.InputStream;
@@ -41,7 +40,7 @@ import java.util.zip.ZipFile;
 import javax.xml.transform.stream.StreamSource;
 
 import org.apache.commons.io.FilenameUtils;
-import org.geoserver.platform.GeoServerExtensions;
+import org.geoserver.platform.resource.Resource;
 import org.geotools.data.DataUtilities;
 import org.restlet.data.Method;
 import org.restlet.data.Request;
@@ -509,7 +508,7 @@ public class IOUtils extends org.apache.commons.io.IOUtils {
 	 * @param sourceDirectory the directory to delete files from.
 	 * @param filter the {@link FilenameFilter} to use for selecting files to delete.
 	 * @param recursive boolean that specifies if we want to delete files recursively or not.
-	 * @return
+	 *
 	 */
 	public static boolean deleteDirectory(File sourceDirectory, FilenameFilter filter, boolean recursive, boolean deleteItself) {
 		inputNotNull(sourceDirectory,filter);
@@ -539,7 +538,7 @@ public class IOUtils extends org.apache.commons.io.IOUtils {
 	 * @param sourceDirectory the directory to delete files from.
 	 * @param filter the {@link FilenameFilter} to use for selecting files to delete.
 	 * @param recursive boolean that specifies if we want to delete files recursively or not.
-	 * @return
+	 *
 	 */
 	public static void deleteFile(File file) {
 		inputNotNull(file);
@@ -763,7 +762,7 @@ public class IOUtils extends org.apache.commons.io.IOUtils {
          * @throws IOException in case something bad happens.
          * @throws FileNotFoundException in case something bad happens.
          */
-        public static void inflate(ZipFile archive, File outputDirectory, String fileName) throws IOException,
+        public static void inflate(ZipFile archive, Resource outputDirectory, String fileName) throws IOException,
                         FileNotFoundException {
             inflate(archive, outputDirectory, fileName, null, null, null, null, false);
         }
@@ -780,8 +779,8 @@ public class IOUtils extends org.apache.commons.io.IOUtils {
 	 * @throws IOException in case something bad happens.
 	 * @throws FileNotFoundException in case something bad happens.
 	 */
-	public static void inflate(ZipFile archive, File outputDirectory, String fileName,
-	        String workspace, String store, Request request, List<File> files, boolean external) throws IOException, FileNotFoundException {
+	public static void inflate(ZipFile archive, Resource outputDirectory, String fileName,
+	        String workspace, String store, Request request, List<Resource> files, boolean external) throws IOException, FileNotFoundException {
 
 	        // Boolean checking if the request is a POST and if the files must be saved into a List
 	        boolean saveFile = files != null && request!=null && request.getMethod().equals(Method.POST);
@@ -805,19 +804,14 @@ public class IOUtils extends org.apache.commons.io.IOUtils {
 		        	    RESTUtils.remapping(workspace, store, itemPath, initialFileName, storeParams);
 		        	}
 		        	
-		        	final File outFile = new File(outputDirectory, itemPath.toString());
-		        	outFile.getParentFile().mkdirs();
-		        	final OutputStream out = new BufferedOutputStream(new FileOutputStream(outFile));
+		        	final Resource outFile = outputDirectory.get(itemPath.toString());
+		        	final OutputStream out = new BufferedOutputStream(outFile.out());
 		
 		            IOUtils.copyStream(in, out, true, true);
 		            // If the file must be listed, then the file is added to the list
 		            if(saveFile){
 		                files.add(outFile);
 		            }
-		        }
-		        else {
-		            //if the entry is a directory attempt to make it
-		            new File(outputDirectory, entry.getName()).mkdirs();
 		        }
 		    }
 		}

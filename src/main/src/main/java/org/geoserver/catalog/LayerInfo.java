@@ -1,4 +1,4 @@
-/* (c) 2014 Open Source Geospatial Foundation - all rights reserved
+/* (c) 2014 - 2015 Open Source Geospatial Foundation - all rights reserved
  * (c) 2001 - 2013 OpenPlans
  * This code is licensed under the GPL 2.0 license, available at the root
  * application directory.
@@ -128,8 +128,8 @@ public interface LayerInfo extends PublishedInfo {
     /**
      * Sets the queryable status
      *
-     * @param {@code true} to set this Layer as queryable and subject of GetFeatureInfo requests,
-     *        {@code false} to make the layer not queryable.
+     * @param queryable {@code true} to set this Layer as queryable and subject of
+     *        GetFeatureInfo requests, {@code false} to make the layer not queryable.
      */
     void setQueryable(boolean queryable);
 
@@ -144,8 +144,7 @@ public interface LayerInfo extends PublishedInfo {
     /**
      * Sets the opaque status
      * 
-     * @param {@code true} to set this Layer as opaque,
-     *        {@code false} to make the layer not opaque.
+     * @param opaque {@code true} to set this Layer as opaque, {@code false} to make the layer not opaque.
      */
     void setOpaque(boolean opaque);
 
@@ -155,29 +154,10 @@ public interface LayerInfo extends PublishedInfo {
      * Defaults to {@code false}
      * </p>
      */
-    boolean isOpaque();
-
-    /**
-     * Gets the attribution information for this layer.  
-     *
-     * @return an AttributionInfo instance with the layer's attribution information.
-     *
-     * @see AttributionInfo
-     */
-    AttributionInfo getAttribution();
-
-    /**
-     * Sets the attribution information for this layer.  
-     *
-     * @param attribution an AttributionInfo instance with the new attribution information.
-     *
-     * @see AttributionInfo
-     */
-    void setAttribution(AttributionInfo attribution);
-    
+    boolean isOpaque();    
     /**
      * Returns true if the layer existence should be advertised (true by default, unless otherwise set)
-     * @return
+     *
      */
     boolean isAdvertised();
     

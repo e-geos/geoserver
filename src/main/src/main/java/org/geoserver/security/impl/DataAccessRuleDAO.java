@@ -7,7 +7,6 @@ package org.geoserver.security.impl;
 
 import static org.geoserver.security.impl.DataAccessRule.*;
 
-import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -22,6 +21,7 @@ import java.util.logging.Logger;
 import org.geoserver.catalog.Catalog;
 import org.geoserver.config.GeoServerDataDirectory;
 import org.geoserver.platform.GeoServerExtensions;
+import org.geoserver.platform.resource.Resource;
 import org.geoserver.security.AccessMode;
 import org.geoserver.security.CatalogMode;
 import org.geotools.util.logging.Logging;
@@ -52,7 +52,7 @@ public class DataAccessRuleDAO extends AbstractAccessRuleDAO<DataAccessRule> {
 
     /**
      * Returns the instanced contained in the Spring context for the UI to use
-     * @return
+     *
      */
     public static DataAccessRuleDAO get() {
        return GeoServerExtensions.bean(DataAccessRuleDAO.class); 
@@ -73,7 +73,7 @@ public class DataAccessRuleDAO extends AbstractAccessRuleDAO<DataAccessRule> {
      * 
      * @param rawCatalog
      */
-    DataAccessRuleDAO(Catalog rawCatalog, File securityDir) {
+    DataAccessRuleDAO(Catalog rawCatalog, Resource securityDir) {
         super(securityDir, LAYERS);
         this.rawCatalog = rawCatalog;
     }
@@ -81,7 +81,7 @@ public class DataAccessRuleDAO extends AbstractAccessRuleDAO<DataAccessRule> {
     /**
      * The way the catalog should react to unauthorized access
      * 
-     * @return
+     *
      */
     public CatalogMode getMode() {
         checkPropertyFile(false);
@@ -92,7 +92,7 @@ public class DataAccessRuleDAO extends AbstractAccessRuleDAO<DataAccessRule> {
      * Parses the rules contained in the property file
      * 
      * @param props
-     * @return
+     *
      */
     protected void loadRules(Properties props) {
         TreeSet<DataAccessRule> result = new TreeSet<DataAccessRule>();
@@ -133,7 +133,7 @@ public class DataAccessRuleDAO extends AbstractAccessRuleDAO<DataAccessRule> {
      * Parses a single layer.properties line into a {@link DataAccessRule}, returns false if the
      * rule is not valid
      * 
-     * @return
+     *
      */
     DataAccessRule parseDataAccessRule(String ruleKey, String ruleValue) {
         final String rule = ruleKey + "=" + ruleValue;
@@ -196,7 +196,7 @@ public class DataAccessRuleDAO extends AbstractAccessRuleDAO<DataAccessRule> {
     
     /**
      * Turns the rules list into a property bag
-     * @return
+     *
      */
     protected Properties toProperties() {
         Properties props = new Properties();
@@ -214,7 +214,7 @@ public class DataAccessRuleDAO extends AbstractAccessRuleDAO<DataAccessRule> {
      * Parses workspace.layer.mode into an array of strings
      * 
      * @param path
-     * @return
+     *
      */
     static String[] parseElements(String path) {
         String[] rawParse = path.trim().split("\\s*\\.\\s*");
@@ -252,7 +252,7 @@ public class DataAccessRuleDAO extends AbstractAccessRuleDAO<DataAccessRule> {
 	 * Returns a sorted set of rules associated to the role
 	 * 
 	 * @param role
-	 * @return
+	 *
 	 */
 	public SortedSet<DataAccessRule> getRulesAssociatedWithRole(String role) {
 	    SortedSet<DataAccessRule> result = new TreeSet<DataAccessRule>();
